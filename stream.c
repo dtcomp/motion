@@ -54,7 +54,7 @@ static int set_sock_timeout(int sock, int sec)
     tv.tv_usec = 0;
 
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*) &tv, sizeof(tv))) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: set socket timeout failed");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "set socket timeout failed");
         return 1;
     }
     return 0;
@@ -103,7 +103,7 @@ static int read_http_request(int sock, char* buffer, int buflen, char* uri, int 
         nread += readb;
 
         if (nread > buflen) {
-            MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: motion-stream End buffer reached"
+            MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "motion-stream End buffer reached"
                       " waiting for buffer ending");
             break;
         }
@@ -121,7 +121,7 @@ static int read_http_request(int sock, char* buffer, int buflen, char* uri, int 
             return 0;
         }
 
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: motion-stream READ give up!");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "motion-stream READ give up!");
         return 0;
     }
 
@@ -179,6 +179,8 @@ static void* handle_basic_auth(void* param)
         "Pragma: no-cache\r\n"
         "WWW-Authenticate: Basic realm=\""STREAM_REALM"\"\r\n\r\n";
 
+    MOTION_PTHREAD_SETNAME("handle_basic_auth");
+
     pthread_mutex_lock(&stream_auth_mutex);
     p->thread_count++;
     pthread_mutex_unlock(&stream_auth_mutex);
@@ -207,10 +209,10 @@ static void* handle_basic_auth(void* param)
 
         authentication = mymalloc(BASE64_LENGTH(auth_size) + 1);
         userpass = mymalloc(auth_size + 4);
-        /* base64_encode can read 3 bytes after the end of the string, initialize it. */
+        /* motion_base64_encode can read 3 bytes after the end of the string, initialize it. */
         memset(userpass, 0, auth_size + 4);
         strcpy(userpass, p->conf->stream_authentication);
-        base64_encode(userpass, authentication, auth_size);
+        motion_base64_encode(userpass, authentication, auth_size);
         free(userpass);
 
         if (strcmp(auth, authentication)) {
@@ -224,7 +226,7 @@ static void* handle_basic_auth(void* param)
 
     /* Set socket to non blocking */
     if (fcntl(p->sock, F_SETFL, p->sock_flags) < 0) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: fcntl");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "fcntl");
         goto Error;
     }
 
@@ -243,7 +245,7 @@ static void* handle_basic_auth(void* param)
 
 Error:
     if (write(p->sock, request_auth_response_template, strlen (request_auth_response_template)) < 0)
-        MOTION_LOG(DBG, TYPE_STREAM, SHOW_ERRNO, "%s: write failure 1:handle_basic_auth");
+        MOTION_LOG(DBG, TYPE_STREAM, SHOW_ERRNO, "write failure 1:handle_basic_auth");
 
 Invalid_Request:
     close(p->sock);
@@ -409,26 +411,30 @@ static void* handle_md5_digest(void* param)
         "Pragma: no-cache\r\n"
         "WWW-Authenticate: Digest";
     static const char *auth_failed_html_template=
-        "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\r\n"
-        "<HTML><HEAD>\r\n"
-        "<TITLE>401 Authorization Required</TITLE>\r\n"
-        "</HEAD><BODY>\r\n"
-        "<H1>Authorization Required</H1>\r\n"
-        "This server could not verify that you are authorized to access the document "
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "<head><title>401 Authorization Required</title></head>\n"
+        "<body>\n"
+        "<h1>Authorization Required</h1>\n"
+        "<p>This server could not verify that you are authorized to access the document "
         "requested.  Either you supplied the wrong credentials (e.g., bad password), "
-        "or your browser doesn't understand how to supply the credentials required.\r\n"
-        "</BODY></HTML>\r\n";
+        "or your browser doesn't understand how to supply the credentials required.</p>\n"
+        "</body>\n"
+        "</html>\n";
     static const char *internal_error_template=
         "HTTP/1.0 500 Internal Server Error\r\n"
         "Server: Motion/"VERSION"\r\n"
         "Content-Type: text/html\r\n"
         "Connection: Close\r\n\r\n"
-        "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\r\n"
-        "<HTML><HEAD>\r\n"
-        "<TITLE>500 Internal Server Error</TITLE>\r\n"
-        "</HEAD><BODY>\r\n"
-        "<H1>500 Internal Server Error</H1>\r\n"
-        "</BODY></HTML>\r\n";
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "<head><title>500 Internal Server Error</title></head>\n"
+        "<body>\n"
+        "<h1>500 Internal Server Error</h1>\n"
+        "</body>\n"
+        "</html>\n";
+
+    MOTION_PTHREAD_SETNAME("handle_md5_digest");
 
     pthread_mutex_lock(&stream_auth_mutex);
     p->thread_count++;
@@ -441,13 +447,13 @@ static void* handle_md5_digest(void* param)
     snprintf(server_nonce, SERVER_NONCE_LEN, "%08x%08x", rand1, rand2);
 
     if (!p->conf->stream_authentication) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: Error no authentication data");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "Error no authentication data");
         goto InternalError;
     }
     h = strstr(p->conf->stream_authentication, ":");
 
     if (!h) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: Error no authentication data (no ':' found)");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "Error no authentication data (no ':' found)");
         goto InternalError;
     }
 
@@ -455,7 +461,7 @@ static void* handle_md5_digest(void* param)
     server_pass = (char*)malloc(strlen(h) + 1);
 
     if (!server_user || !server_pass) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: Error malloc failed");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "Error malloc failed");
         goto InternalError;
     }
 
@@ -567,20 +573,20 @@ Error:
                 "Content-Type: text/html\r\n"
                 "Keep-Alive: timeout=%i\r\n"
                 "Connection: keep-alive\r\n"
-                "Content-Length: %Zu\r\n\r\n",
+                "Content-Length: %zu\r\n\r\n",
                 request_auth_response_template, server_nonce,
                 KEEP_ALIVE_TIMEOUT, strlen(auth_failed_html_template));
         if (write(p->sock, buffer, strlen(buffer)) < 0)
-            MOTION_LOG(DBG, TYPE_STREAM, SHOW_ERRNO, "%s: write failure 1:handle_md5_digest");
+            MOTION_LOG(DBG, TYPE_STREAM, SHOW_ERRNO, "write failure 1:handle_md5_digest");
         if (write(p->sock, auth_failed_html_template, strlen(auth_failed_html_template)) < 0)
-            MOTION_LOG(DBG, TYPE_STREAM, SHOW_ERRNO, "%s: write failure 2:handle_md5_digest");
+            MOTION_LOG(DBG, TYPE_STREAM, SHOW_ERRNO, "write failure 2:handle_md5_digest");
     }
 
     // OK - Access
 
     /* Set socket to non blocking */
     if (fcntl(p->sock, F_SETFL, p->sock_flags) < 0) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: fcntl");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "fcntl");
         goto Error;
     }
 
@@ -605,7 +611,7 @@ InternalError:
     free(server_pass);
 
     if (write(p->sock, internal_error_template, strlen(internal_error_template)) < 0)
-      MOTION_LOG(DBG, TYPE_STREAM, SHOW_ERRNO, "%s: write failure 3:handle_md5_digest");
+      MOTION_LOG(DBG, TYPE_STREAM, SHOW_ERRNO, "write failure 3:handle_md5_digest");
 
 Invalid_Request:
     close(p->sock);
@@ -648,7 +654,7 @@ static void do_client_auth(struct context *cnt, int sc)
       handle_func = handle_md5_digest;
       break;
     default:
-      MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: Error unknown stream authentication method");
+      MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "Error unknown stream authentication method");
       goto Error;
       break;
     }
@@ -661,13 +667,13 @@ static void do_client_auth(struct context *cnt, int sc)
 
     /* Set socket to blocking */
     if ((flags = fcntl(sc, F_GETFL, 0)) < 0) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: fcntl");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "fcntl");
         goto Error;
     }
     handle_param->sock_flags = flags;
 
     if (fcntl(sc, F_SETFL, flags & (~O_NONBLOCK)) < 0) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: fcntl");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "fcntl");
         goto Error;
     }
 
@@ -675,18 +681,18 @@ static void do_client_auth(struct context *cnt, int sc)
         goto Error;
 
     if (pthread_attr_init(&attr)) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: Error pthread_attr_init");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "Error pthread_attr_init");
         goto Error;
     }
 
     if (pthread_create(&thread_id, &attr, handle_func, handle_param)) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: Error pthread_create");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "Error pthread_create");
         goto Error;
     }
     pthread_detach(thread_id);
 
     if (pthread_attr_destroy(&attr))
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: Error pthread_attr_destroy");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "Error pthread_attr_destroy");
 
     return;
 
@@ -707,82 +713,76 @@ Error:
  */
 int http_bindsock(int port, int local, int ipv6_enabled)
 {
-    int sl = -1, optval;
-    struct addrinfo hints, *res = NULL, *ressave = NULL;
-    char portnumber[10], hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+    int sd = socket(ipv6_enabled?AF_INET6:AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    snprintf(portnumber, sizeof(portnumber), "%u", port);
-    memset(&hints, 0, sizeof(struct addrinfo));
-
-    /* Use the AI_PASSIVE flag, which indicates we are using this address for a listen() */
-    hints.ai_flags = AI_PASSIVE;
-#if defined(BSD)
-    hints.ai_family = AF_INET;
-#else
-    if (!ipv6_enabled)
-        hints.ai_family = AF_INET;
-    else
-        hints.ai_family = AF_UNSPEC;
-#endif
-    hints.ai_socktype = SOCK_STREAM;
-
-    optval = getaddrinfo(local ? "localhost" : NULL, portnumber, &hints, &res);
-
-    if (optval != 0) {
-        MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "%s: getaddrinfo() for motion-stream socket failed: %s",
-                   gai_strerror(optval));
-
-        if (res != NULL)
-            freeaddrinfo(res);
+    if (sd == -1)
+    {
+        MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "error creating socket");
         return -1;
     }
 
-    ressave = res;
+    int yes = 1, no = 0;
+    if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) != 0)
+    {
+        MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "setting SO_REUSEADDR to yes failed");
+        /* we can carry on even if this failed */
+    }
 
-    while (res) {
-        /* Create socket */
-        sl = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-
-        getnameinfo(res->ai_addr, res->ai_addrlen, hbuf,
-                    sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV);
-
-        if (sl >= 0) {
-            optval = 1;
-            /* Reuse Address */
-            setsockopt(sl, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int));
-
-            MOTION_LOG(NTC, TYPE_STREAM, NO_ERRNO, "%s: motion-stream testing : %s addr: %s port: %s",
-                       res->ai_family == AF_INET ? "IPV4":"IPV6", hbuf, sbuf);
-
-            if (bind(sl, res->ai_addr, res->ai_addrlen) == 0) {
-                MOTION_LOG(NTC, TYPE_STREAM, NO_ERRNO, "%s: motion-stream Bound : %s addr: %s port: %s",
-                           res->ai_family == AF_INET ? "IPV4":"IPV6", hbuf, sbuf);
-                break;
-            }
-
-            MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "%s: motion-stream bind() failed, retrying");
-            close(sl);
-            sl = -1;
+    if (ipv6_enabled)
+    {
+        if (setsockopt(sd, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no)) != 0)
+        {
+            MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "setting IPV6_V6ONLY to no failed");
+            /* we can carry on even if this failed */
         }
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: motion-stream socket failed, retrying");
-        res = res->ai_next;
     }
 
-    freeaddrinfo(ressave);
+    const char *addr_str;
+    struct sockaddr_storage sin;
+    socklen_t sinsize;
+    bzero(&sin, sizeof(struct sockaddr_storage));
+    sin.ss_family = ipv6_enabled?AF_INET6:AF_INET;
+    if (ipv6_enabled) {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6*)&sin;
+        sin6->sin6_family = AF_INET6;
+        sin6->sin6_port = htons(port);
+        if(local) {
+            addr_str = "::1";
+            sin6->sin6_addr = in6addr_loopback;
+        } else {
+            addr_str = "any IPv4/IPv6 address";
+            sin6->sin6_addr = in6addr_any;
+        }
+        sinsize = sizeof(*sin6);
+    } else {
+        struct sockaddr_in *sin4 = (struct sockaddr_in*)&sin;
+        sin4->sin_family = AF_INET;
+        sin4->sin_port = htons(port);
+        if(local) {
+            addr_str = "127.0.0.1";
+            sin4->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        } else {
+            addr_str = "any IPv4 address";
+            sin4->sin_addr.s_addr = htonl(INADDR_ANY);
+        }
+        sinsize = sizeof(*sin4);
+    }
 
-    if (sl < 0) {
-        MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "%s: motion-stream creating socket/bind ERROR");
+    if (bind(sd, (struct sockaddr*)&sin, sinsize) != 0) {
+        MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "error binding on %s port %d", addr_str, port);
+        close(sd);
         return -1;
     }
 
-
-    if (listen(sl, DEF_MAXWEBQUEUE) == -1) {
-        MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "%s: motion-stream listen() ERROR");
-        close(sl);
-        sl = -1;
+    if (listen(sd, DEF_MAXWEBQUEUE) != 0) {
+        MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "error listening");
+        close(sd);
+        return -1;
     }
 
-    return sl;
+    MOTION_LOG(NTC, TYPE_STREAM, NO_ERRNO, "listening on %s port %d", addr_str, port);
+
+    return sd;
 }
 
 /**
@@ -794,19 +794,18 @@ int http_bindsock(int port, int local, int ipv6_enabled)
 static int http_acceptsock(int sl)
 {
     int sc;
-    unsigned long i;
-    struct sockaddr_storage sin;
-    socklen_t addrlen = sizeof(sin);
+    struct sockaddr_storage addr;
+    socklen_t addr_len = sizeof(addr);
+    sc = accept(sl, (struct sockaddr*)&addr, &addr_len);
 
-    if ((sc = accept(sl, (struct sockaddr *)&sin, &addrlen)) >= 0) {
-        i = 1;
-        ioctl(sc, FIONBIO, &i);
-        return sc;
+    if (sc < 0) {
+        MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "motion-stream accept()");
+        return -1;
     }
 
-    MOTION_LOG(CRT, TYPE_STREAM, SHOW_ERRNO, "%s: motion-stream accept()");
-
-    return -1;
+    unsigned long i = 1;
+    ioctl(sc, FIONBIO, &i);
+    return sc;
 }
 
 
@@ -958,7 +957,7 @@ static void stream_add_client(struct stream *list, int sc)
     new->socket = sc;
 
     if ((new->tmpbuffer = stream_tmpbuffer(sizeof(header))) == NULL) {
-        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: Error creating tmpbuffer in stream_add_client");
+        MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "Error creating tmpbuffer in stream_add_client");
     } else {
         memcpy(new->tmpbuffer->ptr, header, sizeof(header)-1);
         new->tmpbuffer->size = sizeof(header)-1;
@@ -1052,7 +1051,7 @@ void stream_stop(struct context *cnt)
     struct stream *list;
     struct stream *next = cnt->stream.next;
 
-    MOTION_LOG(NTC, TYPE_STREAM, NO_ERRNO, "%s: Closing motion-stream listen socket"
+    MOTION_LOG(NTC, TYPE_STREAM, NO_ERRNO, "Closing motion-stream listen socket"
                " & active motion-stream sockets");
 
     close(cnt->stream.socket);
@@ -1071,7 +1070,7 @@ void stream_stop(struct context *cnt)
         free(list);
     }
 
-    MOTION_LOG(NTC, TYPE_STREAM, NO_ERRNO, "%s: Closed motion-stream listen socket"
+    MOTION_LOG(NTC, TYPE_STREAM, NO_ERRNO, "Closed motion-stream listen socket"
                " & active motion-stream sockets");
 }
 
@@ -1196,7 +1195,7 @@ void stream_put(struct context *cnt, unsigned char *image)
              */
             stream_add_write(&cnt->stream, tmpbuffer, cnt->conf.stream_maxrate);
         } else {
-            MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "%s: Error creating tmpbuffer");
+            MOTION_LOG(ERR, TYPE_STREAM, SHOW_ERRNO, "Error creating tmpbuffer");
         }
     }
 

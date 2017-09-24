@@ -7,7 +7,7 @@
  *    written by Jeroen Vreeken and enhanced by several Motion
  *    project contributors, particularly Angel Carpintero and
  *    Christopher Price.
- *    
+ *
  *    Copyright 2005, William M. Brack
  *    This software is distributed under the GNU Public license
  *    Version 2.  See also the file 'COPYING'.
@@ -15,7 +15,6 @@
 #ifndef _INCLUDE_NETCAM_H
 #define _INCLUDE_NETCAM_H
 
-#undef HAVE_STDLIB_H
 #include <jpeglib.h>
 #include <setjmp.h>
 #include <sys/socket.h>
@@ -107,10 +106,12 @@ typedef struct file_context {
 #define NCS_BLOCK               2  /* streaming is done via MJPG-block */
 #define NCS_RTSP                3  /* streaming is done via RTSP */
 
-
-#define RTSP_NOTCONNECTED  0  /* The camera has never connected */
-#define RTSP_CONNECTED     1  /* The camera is currently connected */
-#define RTSP_RECONNECTING  2  /* The camera is trying to reconnect*/
+enum RTSP_STATUS {
+    RTSP_NOTCONNECTED,   /* The camera has never connected */
+    RTSP_CONNECTED,      /* The camera is currently connected */
+    RTSP_RECONNECTING,   /* Motion is trying to reconnect to camera */
+    RTSP_READINGIMAGE    /* Motion is reading a image from camera */
+};
 
 /*
  * struct netcam_context contains all the structures and other data
@@ -148,7 +149,7 @@ typedef struct netcam_context {
                                     for synchronisation between the
                                     camera handler and the motion main
                                     loop, showing new frame is ready */
-    
+
     int start_capture;          /* besides our signalling condition,
                                    we also keep a flag to assure the
                                    camera-handler will always start
@@ -159,19 +160,19 @@ typedef struct netcam_context {
     char *connect_host;         /* the host to connect to (may be
                                    either the camera host, or
                                    possibly a proxy) */
-    
+
     int connect_port;           /* usually will be 80, but can be
                                    specified as something else by
                                    the user */
 
-    int connect_http_10;        /* set to TRUE if HTTP 1.0 connection 
+    int connect_http_10;        /* set to TRUE if HTTP 1.0 connection
                                    (netcam_keepalive off) */
 
-    int connect_http_11;        /* set to TRUE if HTTP 1.1 connection 
+    int connect_http_11;        /* set to TRUE if HTTP 1.1 connection
                                    (netcam_keepalive on)  */
 
-    int connect_keepalive;      /* set to TRUE if connection maintained after 
-                                   a request, otherwise FALSE to close down 
+    int connect_keepalive;      /* set to TRUE if connection maintained after
+                                   a request, otherwise FALSE to close down
                                    the socket each time (netcam_keealive force) */
 
     int keepalive_thisconn;     /* set to TRUE if cam has sent 'Keep-Alive' in this connection */
@@ -206,7 +207,7 @@ typedef struct netcam_context {
                                    context for FILE connection */
 
     struct rtsp_context *rtsp;  /* this structure contains the
-                                   context for RTSP connection */                                                                       
+                                   context for RTSP connection */
 
     int (*get_image)(netcam_context_ptr);
                                 /* Function to fetch the image from
@@ -230,7 +231,7 @@ typedef struct netcam_context {
                                 /* Three separate buffers are used
                                    for handling the data.  Their
                                    definitions follow: */
-    
+
     netcam_buff_ptr latest;     /* This buffer contains the latest
                                    frame received from the camera */
 
@@ -244,17 +245,17 @@ typedef struct netcam_context {
     int imgcnt_last;            /* remember last count to check if a new
                                    image arrived */
 
-    int warning_count;          /* simple count of number of warnings 
+    int warning_count;          /* simple count of number of warnings
                                    since last good frame was received */
 
     int error_count;            /* simple count of number of errors since
                                    last good frame was received */
-    
+
     unsigned int width;         /* info for decompression */
     unsigned int height;
 
     int JFIF_marker;            /* Debug to know if JFIF was present or not */
-    unsigned int netcam_tolerant_check; /* For network cameras with buggy firmwares */ 
+    unsigned int netcam_tolerant_check; /* For network cameras with buggy firmwares */
 
     struct timeval last_image;  /* time the most recent image was
                                    received */
@@ -279,7 +280,7 @@ typedef struct netcam_context {
 typedef struct {
     char mh_magic[MJPG_MH_MAGIC_SIZE];     /* must contain the string MJP
                                               not null-terminated. */
-    unsigned int mh_framesize;             /* Total size of the current 
+    unsigned int mh_framesize;             /* Total size of the current
                                               frame in bytes (~45kb on WVC200) */
     unsigned short mh_framewidth;          /* Frame width in pixels */
     unsigned short mh_frameheight;         /* Frame height in pixels */
@@ -290,7 +291,7 @@ typedef struct {
     char mh_reserved[30];                  /* Unknown data, seems to be
                                               constant between all headers */
 } mjpg_header;
- 
+
 /*
  * Declare prototypes for our external entry points
  */
@@ -304,5 +305,25 @@ int netcam_next (struct context *, unsigned char *);
 void netcam_cleanup (struct netcam_context *, int);
 ssize_t netcam_recv(netcam_context_ptr, void *, size_t);
 void netcam_url_free(struct url_t *parse_url);
+
+/**
+ * Publish new image
+ *
+ * Moves the image in 'receiving' into 'latest' and updates last frame time
+ */
+void netcam_image_read_complete(netcam_context_ptr netcam);
+
+/**
+ * This routine checks whether there is enough room in a buffer to copy
+ * some additional data.  If there is not enough room, it will re-allocate
+ * the buffer and adjust it's size.
+ *
+ * Parameters:
+ *      buff            Pointer to a netcam_image_buffer structure.
+ *      numbytes        The number of bytes to be copied.
+ *
+ * Returns:             Nothing
+ */
+void netcam_check_buffsize(netcam_buff_ptr buff, size_t numbytes);
 
 #endif

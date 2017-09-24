@@ -15,17 +15,20 @@
 #ifndef _INCLUDE_CONF_H
 #define _INCLUDE_CONF_H
 
-/* 
+/*
  * More parameters may be added later.
  */
 struct config {
+    const char *camera_name;
     unsigned int log_level;
     char *log_type_str;
     char *log_file;
     int setup_mode;
     int width;
     int height;
+    int camera_id;
     int quality;
+    const char *flip_axis;
     int rotate_deg;
     int max_changes;
     int threshold_tune;
@@ -65,9 +68,6 @@ struct config {
     int ffmpeg_bps;
     int ffmpeg_vbr;
     const char *ffmpeg_video_codec;
-#ifdef HAVE_SDL
-    int sdl_threadnr;
-#endif
     int ipv6_enabled;
     int stream_port;
     int stream_quality;
@@ -86,10 +86,8 @@ struct config {
     unsigned long frequency;
     int tuner_number;
     int timelapse;
-    const char *timelapse_mode; 
-#if (defined(BSD) || defined(__FreeBSD_kernel__))
+    const char *timelapse_mode;
     const char *tuner_device;
-#endif
     const char *video_device;
     int v4l2_palette;
     const char *vidpipe;
@@ -101,11 +99,13 @@ struct config {
     char *on_event_start;
     char *on_event_end;
     const char *mask_file;
+    const char *mask_privacy;
     int smart_mask_speed;
     int sql_log_image;
     int sql_log_snapshot;
     int sql_log_movie;
     int sql_log_timelapse;
+    const char *sql_query_start;
     const char *sql_query;
     const char *database_type;
     const char *database_dbname;
@@ -120,6 +120,7 @@ struct config {
     char *on_movie_start;
     char *on_movie_end;
     char *on_camera_lost;
+    char *on_camera_found;
     const char *motionvidpipe;
     const char *netcam_url;
     const char *netcam_userpass;
@@ -127,6 +128,10 @@ struct config {
     const char *netcam_proxy;
     unsigned int netcam_tolerant_check;
     unsigned int rtsp_uses_tcp;
+#ifdef HAVE_MMAL
+    const char *mmalcam_name;
+    const char *mmalcam_control_params;
+#endif
     int text_changes;
     const char *text_left;
     const char *text_right;
@@ -134,6 +139,7 @@ struct config {
     int text_double;
     const char *despeckle_filter;
     const char *area_detect;
+    const char *camera_dir;
     int minimum_motion_frames;
     const char *exif_text;
     char *pid_file;
@@ -141,8 +147,8 @@ struct config {
     char **argv;
 };
 
-/** 
- * typedef for a param copy function. 
+/**
+ * typedef for a param copy function.
  */
 typedef struct context ** (* conf_copy_func)(struct context **, const char *, int);
 typedef const char *(* conf_print_func)(struct context **, char **, int, unsigned int);
@@ -157,9 +163,22 @@ typedef struct {
     int conf_value;                   /* pointer to a field in struct context     */
     conf_copy_func  copy;             /* a function to set the value in 'config'  */
     conf_print_func print;            /* a function to output the value to a file */
-} config_param; 
+} config_param;
 
 extern config_param config_params[];
+
+/**
+ * description for deprecated parameters in the config file
+ */
+typedef struct {
+    const char *name;           /* Name of the deprecated option */
+    const char *last_version;   /* Last version this option was used in */
+    const char *info;           /* Short text on why it was deprecated (removed, replaced with, etc) */
+    int conf_value;             /* Pointer to the replacement field in struct context */
+    conf_copy_func copy;        /* Function to set the replacement value */
+} dep_config_param;
+
+extern dep_config_param dep_config_params[];
 
 struct context **conf_load(struct context **);
 struct context **conf_cmdparse(struct context **, const char *, const char *);
@@ -169,9 +188,5 @@ void malloc_strings(struct context *);
 char *mystrdup(const char *);
 char *mystrcpy(char *, const char *);
 struct context **copy_string(struct context **, const char *, int);
-
-#ifndef HAVE_GET_CURRENT_DIR_NAME
-char *get_current_dir_name(void);
-#endif
 
 #endif /* _INCLUDE_CONF_H */

@@ -16,8 +16,9 @@
 #include <syslog.h>
 
 /* Logging mode */
-#define LOGMODE_FILE            0   /* Log messages to file   */
-#define LOGMODE_SYSLOG          1   /* Log messages to syslog */
+#define LOGMODE_NONE            0   /* No logging             */
+#define LOGMODE_FILE            1   /* Log messages to file   */
+#define LOGMODE_SYSLOG          2   /* Log messages to syslog */
 
 #define NO_ERRNO                0   /* Flag to avoid how message associated to errno */
 #define SHOW_ERRNO              1   /* Flag to show message associated to errno */
@@ -49,7 +50,7 @@
 #define TYPE_DEFAULT            TYPE_ALL      /* Default type      */
 #define TYPE_DEFAULT_STR        "ALL"         /* Default name logs */
 
-#define MOTION_LOG(x, y, z, format, args...)  motion_log(x, y, z, format, __FUNCTION__, ##args)
+#define MOTION_LOG(x, y, z, format, args...)  motion_log(x, y, z, "%s: " format, __FUNCTION__, ##args)
 
 int get_log_type(const char* type);
 const char* get_log_type_str(unsigned int type);

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="97">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df root="." name="0">
+      <in>alg.c</in>
+      <in>conf.c</in>
+      <in>draw.c</in>
+      <in>event.c</in>
+      <in>ffmpeg.c</in>
+      <in>jpegutils.c</in>
+      <in>logger.c</in>
+      <in>md5.c</in>
+      <in>motion.c</in>
+      <in>netcam.c</in>
+      <in>netcam_datetime_parse.h</in>
+      <in>netcam_ftp.c</in>
+      <in>netcam_jpeg.c</in>
+      <in>netcam_rtsp.c</in>
+      <in>netcam_wget.c</in>
+      <in>picture.c</in>
+      <in>rotate.c</in>
+      <in>stream.c</in>
+      <in>track.c</in>
+      <in>video.c</in>
+      <in>video2.c</in>
+      <in>video_common.c</in>
+      <in>vloopback_motion.c</in>
+      <in>webhttpd.c</in>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+      <itemPath>configure</itemPath>
+      <itemPath>nbproject/private/launcher.properties</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
+  <sourceRootList>
+    <Elem>.</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>false</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <flagsDictionary>
+        <element flagsID="0" commonFlags="-march=native -mtune=native"/>
+      </flagsDictionary>
+      <codeAssistance>
+      </codeAssistance>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>.</buildCommandWorkingDir>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <executablePath>motion</executablePath>
+          <cTool>
+            <preprocessorList>
+              <Elem>HAVE_BSWAP</Elem>
+              <Elem>MOTION_V4L2</Elem>
+              <Elem>MOTION_V4L2_OLD</Elem>
+              <Elem>TYPE_32BIT=int</Elem>
+              <Elem>VERSION="Unofficial-Git-2caced3"</Elem>
+              <Elem>_REENTRANT</Elem>
+              <Elem>sysconfdir="/usr/local/etc"</Elem>
+            </preprocessorList>
+          </cTool>
+        </makeTool>
+        <preBuild>
+          <preBuildCommandWorkingDir>.</preBuildCommandWorkingDir>
+          <preBuildCommand>./configure CC=${IDE_CC} CXX=${IDE_CXX} CFLAGS="-g3 -gdwarf-2" CXXFLAGS="-g3 -gdwarf-2"</preBuildCommand>
+        </preBuild>
+      </makefileType>
+      <item path="alg.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="conf.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="draw.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="event.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="ffmpeg.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="jpegutils.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="logger.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="md5.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="motion.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="netcam.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="netcam_datetime_parse.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="netcam_ftp.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="netcam_jpeg.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="netcam_rtsp.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="netcam_wget.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="picture.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="rotate.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="stream.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="track.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="video.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="video2.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="video_common.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="vloopback_motion.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+      <item path="webhttpd.c" ex="false" tool="0" flavor2="0">
+        <cTool flags="0">
+        </cTool>
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>
