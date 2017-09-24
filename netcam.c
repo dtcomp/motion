@@ -46,6 +46,7 @@
 
 #include "netcam_ftp.h"
 #include "netcam_rtsp.h"
+#include "netcam_datetime_parse.h"
 
 #define CONNECT_TIMEOUT        10     /* Timeout on remote connection attempt */
 #define READ_TIMEOUT            5     /* Default timeout on recv requests */
@@ -570,6 +571,10 @@ static int netcam_read_first_header(netcam_context_ptr netcam)
      * there may be a Content-length.
      *
      */
+    
+    netcam->receiving->image_time.tv_usec=0;   
+    netcam->receiving->image_time.tv_sec=0;
+    
     while (1) {     /* 'Do forever' */
         ret = header_get(netcam, &header, HG_NONE);
 
@@ -611,7 +616,12 @@ static int netcam_read_first_header(netcam_context_ptr netcam)
 
         if (*header == 0)   /* Blank line received */
             break;
+        time_t ut=0;
+        ut=netcam_check_last_modified(header);
 
+        if (ut)
+            netcam->receiving->image_time.tv_sec=ut;
+ 
         /* Check if this line is the content type. */
         if ((ret = netcam_check_content_type(header)) >= 0) {
             retval = ret;
@@ -1303,8 +1313,9 @@ static int netcam_read_html_jpeg(netcam_context_ptr netcam)
      */
     if (gettimeofday(&curtime, NULL) < 0) 
         MOTION_LOG(WRN, TYPE_NETCAM, SHOW_ERRNO, "%s: gettimeofday");
-    
-    netcam->receiving->image_time = curtime;
+        
+    if (netcam->receiving->image_time.tv_sec==0)
+      netcam->receiving->image_time = curtime;
     
     /* Fix starting of JPEG if needed , some cameras introduce thrash before 
      * SOI  0xFFD8  Start Of Image

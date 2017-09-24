@@ -2654,7 +2654,8 @@ int main (int argc, char **argv)
     int i;
     pthread_attr_t thread_attr;
     pthread_t thread_id;
-
+    
+    netcam_datetime_init();
     /*
      * Setup signals and do some initialization. 1 in the call to
      * 'motion_startup' means that Motion will become a daemon if so has been
